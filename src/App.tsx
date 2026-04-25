@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext';
+import { useEffect } from 'react';
 import RoleSelection from './components/auth/RoleSelection';
 import AuthForm from './components/auth/AuthForm';
 import StudentDashboard from './components/student/StudentDashboard';
@@ -14,7 +15,15 @@ import ToastContainer from './components/ui/ToastContainer';
 import OnboardingTour from './components/ui/OnboardingTour';
 
 const AppRoutes = () => {
-  const { currentUser, isLoading } = useApp();
+  const { currentUser, isLoading, setPendingJoinCode } = useApp();
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const joinCode = searchParams.get('join');
+    if (joinCode) {
+      setPendingJoinCode(joinCode.toUpperCase());
+    }
+  }, [searchParams, setPendingJoinCode]);
 
   if (isLoading) {
     return (

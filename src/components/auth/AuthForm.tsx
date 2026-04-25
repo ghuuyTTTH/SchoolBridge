@@ -14,8 +14,9 @@ import { cn } from '../../lib/utils';
 const AuthForm: React.FC = () => {
   const { role } = useParams<{ role: string }>();
   const navigate = useNavigate();
-  const { users, addUser, login, showToast } = useApp();
+  const { signUp, login, showToast } = useApp();
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -27,46 +28,28 @@ const AuthForm: React.FC = () => {
 
   const validRole = (role as UserRole) || 'student';
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSignUp) {
-      if (users.find(u => u.email === formData.email)) {
-        showToast('Account with this email already exists', 'warning');
-        return;
-      }
-      const newUser: User = {
-        id: crypto.randomUUID(),
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-        role: validRole,
-        createdAt: Date.now(),
-        linkedIds: [],
-        firstTimeUser: true,
-        xp: validRole === 'student' ? 0 : undefined,
-        level: validRole === 'student' ? 'Explorer' : undefined,
-        studentId: validRole === 'student' ? formData.studentId : undefined,
-        schoolCode: validRole === 'teacher' ? formData.schoolCode : undefined,
-      };
-      
-      // If parent signing up with a child student ID, we'll handle actual linking in dashboard
-      // but we store it for now or just wait for dashboard. Prompt says "Parent: Full name, Email, Password, Child's student ID"
-      
-      addUser(newUser);
-      showToast('Account created successfully!', 'success');
-      navigate('/');
-    } else {
-      const user = users.find(u => u.email === formData.email && u.password === formData.password);
-      if (user) {
-        if (user.role !== validRole) {
-          showToast(`This account is registered as a ${user.role}`, 'warning');
-          return;
-        }
-        login(user);
+    setIsLoading(true);
+    try {
+      if (isSignUp) {
+        await signUp({
+          email: formData.email,
+          password: formData.password,
+          name: formData.name,
+        }, validRole);
         navigate('/');
       } else {
-        showToast('Invalid email or password', 'warning');
+        await login({
+          email: formData.email,
+          password: formData.password
+        });
+        navigate('/');
       }
+    } catch (error) {
+      // Error handled in AppContext (toast)
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -95,28 +78,6 @@ const AuthForm: React.FC = () => {
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight text-center">
             {isSignUp ? `Join as a ${validRole}` : `Welcome back, ${validRole}`}
           </h1>
-        </div>
-
-        <div className="space-y-3 mb-8">
-          <button className="w-full py-3 px-4 flex items-center justify-center gap-3 border border-slate-200 rounded-xl hover:bg-slate-50 transition-all font-bold text-sm text-slate-700 active:scale-[0.98]">
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path fill="#EA4335" d="M12.48 10.92v3.28h7.84c-.24 1.84-.9 3.32-2.11 4.5-.74.74-1.9 1.54-4.11 1.54-4.01 0-7.26-3.25-7.26-7.26s3.25-7.26 7.26-7.26c2.09 0 3.73.81 4.83 1.89l2.3-2.3C19.46 3.1 16.6 2 12.48 2 6.48 2 1.6 6.88 1.6 12.88s4.88 10.88 10.88 10.88c4.4 0 7.75-1.45 10.33-4.11 2.67-2.67 3.51-6.44 3.51-9.56 0-.67-.05-1.32-.16-1.91h-13.68z" />
-            </svg>
-            Continue with Google
-          </button>
-          <button className="w-full py-3 px-4 flex items-center justify-center gap-3 bg-[#00A4EF] text-white rounded-xl hover:bg-[#0094D8] transition-all font-bold text-sm active:scale-[0.98]">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-               <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z" />
-            </svg>
-            Continue with Microsoft
-          </button>
-        </div>
-
-        <div className="relative mb-8 text-center">
-          <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-slate-100"></div>
-          </div>
-          <span className="relative px-4 bg-white text-slate-400 text-[10px] font-bold uppercase tracking-widest italic">or use email</span>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -206,9 +167,17 @@ const AuthForm: React.FC = () => {
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             type="submit"
-            className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-100 transition-all mt-4 active:scale-[0.97]"
+            disabled={isLoading}
+            className="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold shadow-md shadow-indigo-100 transition-all mt-4 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSignUp ? 'Create Account' : 'Sign In'}
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Processing...</span>
+              </div>
+            ) : (
+              isSignUp ? 'Create Account' : 'Sign In'
+            )}
           </motion.button>
         </form>
 
