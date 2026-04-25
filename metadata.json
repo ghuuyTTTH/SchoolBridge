@@ -1,0 +1,13 @@
+{
+  "name": "SchoolBridge",
+  "description": "A supportive platform connecting students, teachers, and parents for holistic academic and emotional success.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
+  "majorCapabilities": [
+    "AI-powered tutoring",
+    "Real-time messaging",
+    "Emotional check-ins",
+    "Pomodoro focus tools"
+  ]
+}
